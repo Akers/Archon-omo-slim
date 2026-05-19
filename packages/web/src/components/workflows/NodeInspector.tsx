@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { isAiNode } from '@/lib/node-type-constants';
 import type { DagNodeData } from './DagNodeComponent';
 import type { CommandEntry, DagNode } from '@/lib/api';
 import { useProviders } from '@/hooks/useProviders';
@@ -221,13 +222,43 @@ function GeneralTab({
               updates.promptText = undefined;
               updates.bashScript = undefined;
               updates.bashTimeout = undefined;
+              updates.loopPromptText = undefined;
+              updates.loopMaxIterations = undefined;
+              updates.loopExitCondition = undefined;
+              updates.loopFreshContext = undefined;
+              updates.approvalMessage = undefined;
+              updates.approvalCaptureResponse = undefined;
+              updates.scriptContent = undefined;
+              updates.scriptRuntime = undefined;
+              updates.scriptDeps = undefined;
+              updates.scriptTimeout = undefined;
               updates.label = '';
             } else if (newType === 'prompt') {
               updates.bashScript = undefined;
               updates.bashTimeout = undefined;
+              updates.loopPromptText = undefined;
+              updates.loopMaxIterations = undefined;
+              updates.loopExitCondition = undefined;
+              updates.loopFreshContext = undefined;
+              updates.approvalMessage = undefined;
+              updates.approvalCaptureResponse = undefined;
+              updates.scriptContent = undefined;
+              updates.scriptRuntime = undefined;
+              updates.scriptDeps = undefined;
+              updates.scriptTimeout = undefined;
               updates.label = 'Prompt';
             } else if (newType === 'bash') {
               updates.promptText = undefined;
+              updates.loopPromptText = undefined;
+              updates.loopMaxIterations = undefined;
+              updates.loopExitCondition = undefined;
+              updates.loopFreshContext = undefined;
+              updates.approvalMessage = undefined;
+              updates.approvalCaptureResponse = undefined;
+              updates.scriptContent = undefined;
+              updates.scriptRuntime = undefined;
+              updates.scriptDeps = undefined;
+              updates.scriptTimeout = undefined;
               updates.label = 'Shell';
               updates.allowed_tools = undefined;
               updates.denied_tools = undefined;
@@ -235,6 +266,91 @@ function GeneralTab({
               updates.hooks = undefined;
               updates.mcp = undefined;
               updates.skills = undefined;
+              updates.agents = undefined;
+              updates.effort = undefined;
+              updates.thinking = undefined;
+              updates.sandbox = undefined;
+              updates.betas = undefined;
+              updates.maxBudgetUsd = undefined;
+              updates.systemPrompt = undefined;
+              updates.fallbackModel = undefined;
+            } else if (newType === 'loop') {
+              updates.promptText = undefined;
+              updates.bashScript = undefined;
+              updates.bashTimeout = undefined;
+              updates.approvalMessage = undefined;
+              updates.approvalCaptureResponse = undefined;
+              updates.scriptContent = undefined;
+              updates.scriptRuntime = undefined;
+              updates.scriptDeps = undefined;
+              updates.scriptTimeout = undefined;
+              updates.label = 'Loop';
+              updates.allowed_tools = undefined;
+              updates.denied_tools = undefined;
+              updates.output_format = undefined;
+              updates.hooks = undefined;
+              updates.mcp = undefined;
+              updates.skills = undefined;
+              updates.agents = undefined;
+              updates.effort = undefined;
+              updates.thinking = undefined;
+              updates.sandbox = undefined;
+              updates.betas = undefined;
+              updates.maxBudgetUsd = undefined;
+              updates.systemPrompt = undefined;
+              updates.fallbackModel = undefined;
+            } else if (newType === 'approval') {
+              updates.promptText = undefined;
+              updates.bashScript = undefined;
+              updates.bashTimeout = undefined;
+              updates.loopPromptText = undefined;
+              updates.loopMaxIterations = undefined;
+              updates.loopExitCondition = undefined;
+              updates.loopFreshContext = undefined;
+              updates.scriptContent = undefined;
+              updates.scriptRuntime = undefined;
+              updates.scriptDeps = undefined;
+              updates.scriptTimeout = undefined;
+              updates.label = 'Approval';
+              updates.allowed_tools = undefined;
+              updates.denied_tools = undefined;
+              updates.output_format = undefined;
+              updates.hooks = undefined;
+              updates.mcp = undefined;
+              updates.skills = undefined;
+              updates.agents = undefined;
+              updates.effort = undefined;
+              updates.thinking = undefined;
+              updates.sandbox = undefined;
+              updates.betas = undefined;
+              updates.maxBudgetUsd = undefined;
+              updates.systemPrompt = undefined;
+              updates.fallbackModel = undefined;
+            } else if (newType === 'script') {
+              updates.promptText = undefined;
+              updates.bashScript = undefined;
+              updates.bashTimeout = undefined;
+              updates.loopPromptText = undefined;
+              updates.loopMaxIterations = undefined;
+              updates.loopExitCondition = undefined;
+              updates.loopFreshContext = undefined;
+              updates.approvalMessage = undefined;
+              updates.approvalCaptureResponse = undefined;
+              updates.label = 'Script';
+              updates.allowed_tools = undefined;
+              updates.denied_tools = undefined;
+              updates.output_format = undefined;
+              updates.hooks = undefined;
+              updates.mcp = undefined;
+              updates.skills = undefined;
+              updates.agents = undefined;
+              updates.effort = undefined;
+              updates.thinking = undefined;
+              updates.sandbox = undefined;
+              updates.betas = undefined;
+              updates.maxBudgetUsd = undefined;
+              updates.systemPrompt = undefined;
+              updates.fallbackModel = undefined;
             }
             onUpdate(updates);
           }}
@@ -243,6 +359,9 @@ function GeneralTab({
           <option value="command">Command</option>
           <option value="prompt">Prompt</option>
           <option value="bash">Bash</option>
+          <option value="loop">Loop</option>
+          <option value="approval">Approval</option>
+          <option value="script">Script</option>
         </select>
       </Field>
 
@@ -308,6 +427,149 @@ function GeneralTab({
         </>
       )}
 
+      {node.nodeType === 'loop' && (
+        <>
+          <Field label="Loop Prompt">
+            <textarea
+              value={node.loopPromptText ?? ''}
+              onChange={(e): void => {
+                onUpdate({ loopPromptText: e.target.value });
+              }}
+              rows={5}
+              placeholder="Enter loop prompt..."
+              className={cn(textareaClass, 'min-h-[120px]')}
+            />
+          </Field>
+          <Field label="Max Iterations">
+            <input
+              type="number"
+              min={1}
+              value={node.loopMaxIterations ?? ''}
+              onChange={(e): void => {
+                const v = e.target.value;
+                onUpdate({ loopMaxIterations: v ? Number(v) : undefined });
+              }}
+              placeholder="10"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Exit Condition (until)">
+            <select
+              value={node.loopExitCondition ?? ''}
+              onChange={(e): void => {
+                onUpdate({ loopExitCondition: e.target.value || undefined });
+              }}
+              className={selectClass}
+            >
+              <option value="">Select...</option>
+              <option value="COMPLETE">COMPLETE</option>
+              <option value="NO_ACTION">NO_ACTION</option>
+              <option value="MAX_ITERATIONS">MAX_ITERATIONS</option>
+            </select>
+          </Field>
+          <Field label="Fresh Context">
+            <select
+              value={node.loopFreshContext ? 'true' : 'false'}
+              onChange={(e): void => {
+                onUpdate({ loopFreshContext: e.target.value === 'true' });
+              }}
+              className={selectClass}
+            >
+              <option value="false">Shared (default)</option>
+              <option value="true">Fresh</option>
+            </select>
+          </Field>
+        </>
+      )}
+
+      {node.nodeType === 'approval' && (
+        <>
+          <Field label="Approval Message">
+            <textarea
+              value={node.approvalMessage ?? ''}
+              onChange={(e): void => {
+                onUpdate({ approvalMessage: e.target.value });
+              }}
+              rows={3}
+              placeholder="Describe what needs approval..."
+              className={cn(textareaClass, 'min-h-[80px]')}
+            />
+          </Field>
+          <Field label="Capture Response">
+            <select
+              value={node.approvalCaptureResponse ? 'true' : 'false'}
+              onChange={(e): void => {
+                onUpdate({ approvalCaptureResponse: e.target.value === 'true' });
+              }}
+              className={selectClass}
+            >
+              <option value="false">No (default)</option>
+              <option value="true">Yes</option>
+            </select>
+            <p className="text-[9px] text-text-tertiary">
+              Store approver's comment as output for downstream nodes.
+            </p>
+          </Field>
+        </>
+      )}
+
+      {node.nodeType === 'script' && (
+        <>
+          <Field label="Script Content">
+            <textarea
+              value={node.scriptContent ?? ''}
+              onChange={(e): void => {
+                onUpdate({ scriptContent: e.target.value });
+              }}
+              rows={5}
+              placeholder="console.log('hello world')"
+              className={cn(textareaClass, 'min-h-[120px]')}
+            />
+          </Field>
+          <Field label="Runtime">
+            <select
+              value={node.scriptRuntime ?? ''}
+              onChange={(e): void => {
+                onUpdate({
+                  scriptRuntime: (e.target.value || undefined) as 'bun' | 'uv' | undefined,
+                });
+              }}
+              className={selectClass}
+            >
+              <option value="">Select runtime...</option>
+              <option value="bun">bun</option>
+              <option value="uv">uv (Python)</option>
+            </select>
+          </Field>
+          <Field label="Dependencies">
+            <input
+              type="text"
+              value={node.scriptDeps ?? ''}
+              onChange={(e): void => {
+                onUpdate({ scriptDeps: e.target.value || undefined });
+              }}
+              placeholder="lodash, axios"
+              className={inputClass}
+            />
+            <p className="text-[9px] text-text-tertiary">
+              Comma-separated package names to install before running.
+            </p>
+          </Field>
+          <Field label="Timeout (ms)">
+            <input
+              type="number"
+              value={node.scriptTimeout ?? ''}
+              onChange={(e): void => {
+                const v = e.target.value;
+                onUpdate({ scriptTimeout: v ? Number(v) : undefined });
+              }}
+              placeholder="120000"
+              className={inputClass}
+            />
+          </Field>
+        </>
+      )}
+
       {/* Dependencies */}
       <Field label="Dependencies">
         <DependencyTags
@@ -341,11 +603,11 @@ function ExecutionTab({
   node: DagNodeData;
   onUpdate: (updates: Partial<DagNodeData>) => void;
 }): React.ReactElement {
-  const isBash = node.nodeType === 'bash';
+  const isNonAi = !isAiNode(node.nodeType);
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      {!isBash && (
+      {!isNonAi && (
         <>
           <ProviderField node={node} onUpdate={onUpdate} selectClass={selectClass} />
 
@@ -705,7 +967,7 @@ function DagInspector({
   onDelete,
   onClose,
 }: NodeInspectorProps): React.ReactElement {
-  const isBash = node.nodeType === 'bash';
+  const isNonAi = !isAiNode(node.nodeType);
 
   return (
     <div key={node.id} className="flex flex-col h-full border-l border-border bg-surface">
@@ -742,12 +1004,12 @@ function DagInspector({
           <TabsTrigger value="execution" className="text-xs">
             Execution
           </TabsTrigger>
-          {!isBash && (
+          {!isNonAi && (
             <TabsTrigger value="tools" className="text-xs">
               Tools
             </TabsTrigger>
           )}
-          {!isBash && (
+          {!isNonAi && (
             <TabsTrigger value="advanced" className="text-xs">
               Advanced
             </TabsTrigger>
@@ -763,13 +1025,13 @@ function DagInspector({
             <ExecutionTab node={node} onUpdate={onUpdate} />
           </TabsContent>
 
-          {!isBash && (
+          {!isNonAi && (
             <TabsContent value="tools">
               <ToolsTab node={node} onUpdate={onUpdate} />
             </TabsContent>
           )}
 
-          {!isBash && (
+          {!isNonAi && (
             <TabsContent value="advanced">
               <AdvancedTab key={node.id} node={node} onUpdate={onUpdate} />
             </TabsContent>
