@@ -20,7 +20,7 @@ export function NodePalette(): React.ReactElement {
 
   const onDragStart = (
     e: React.DragEvent,
-    type: 'command' | 'prompt' | 'bash',
+    type: 'command' | 'prompt' | 'bash' | 'loop' | 'approval' | 'script',
     name: string
   ): void => {
     e.dataTransfer.setData('application/reactflow-type', type);
@@ -60,6 +60,42 @@ export function NodePalette(): React.ReactElement {
       >
         <span className="text-[10px] text-accent font-medium">BASH</span>
         <span>Shell script</span>
+      </div>
+
+      {/* Loop node */}
+      <div
+        draggable
+        onDragStart={(e): void => {
+          onDragStart(e, 'loop', 'Loop');
+        }}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-dashed border-border hover:border-purple-500 hover:bg-purple-500/5 cursor-grab text-xs text-text-primary mb-1"
+      >
+        <span className="text-[10px] text-purple-500 font-medium">LOOP</span>
+        <span>Iterative AI loop</span>
+      </div>
+
+      {/* Approval node */}
+      <div
+        draggable
+        onDragStart={(e): void => {
+          onDragStart(e, 'approval', 'Approval');
+        }}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-dashed border-border hover:border-yellow-500 hover:bg-yellow-500/5 cursor-grab text-xs text-text-primary mb-1"
+      >
+        <span className="text-[10px] text-yellow-500 font-medium">APPROVAL</span>
+        <span>Human approval gate</span>
+      </div>
+
+      {/* Script node */}
+      <div
+        draggable
+        onDragStart={(e): void => {
+          onDragStart(e, 'script', 'Script');
+        }}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-dashed border-border hover:border-cyan-500 hover:bg-cyan-500/5 cursor-grab text-xs text-text-primary mb-2"
+      >
+        <span className="text-[10px] text-cyan-500 font-medium">SCRIPT</span>
+        <span>TypeScript / Python script</span>
       </div>
 
       {isLoading && <p className="text-xs text-text-tertiary">Loading commands...</p>}
