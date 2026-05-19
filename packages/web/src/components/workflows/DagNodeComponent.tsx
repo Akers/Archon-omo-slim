@@ -3,40 +3,33 @@ import { Handle, Position } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import type { DagNode } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { NODE_TYPE_CONFIG, type NodeCategory } from '@/lib/node-type-constants';
 
 export interface DagNodeData extends DagNode {
   /** For command nodes: the command name. For prompt nodes: display label ("Prompt"). For bash: display label ("Shell"). */
   label: string;
-  nodeType: 'command' | 'prompt' | 'bash';
+  nodeType: 'command' | 'prompt' | 'bash' | 'loop' | 'approval' | 'script';
   promptText?: string;
   bashScript?: string;
   bashTimeout?: number;
+  // Loop node fields
+  loopPromptText?: string;
+  loopMaxIterations?: number;
+  loopExitCondition?: string;
+  loopFreshContext?: boolean;
+  // Approval node fields
+  approvalMessage?: string;
+  approvalCaptureResponse?: boolean;
+  // Script node fields
+  scriptContent?: string;
+  scriptRuntime?: 'bun' | 'uv';
+  scriptDeps?: string;
+  scriptTimeout?: number;
   /** Required by React Flow's Node<T> constraint — do not rely on this for typed access. */
   [key: string]: unknown;
 }
 
 export type DagFlowNode = Node<DagNodeData>;
-
-const TYPE_CONFIG = {
-  command: {
-    badge: 'CMD',
-    stripeColor: 'bg-node-command',
-    badgeBg: 'bg-node-command/20',
-    badgeText: 'text-node-command',
-  },
-  prompt: {
-    badge: 'PROMPT',
-    stripeColor: 'bg-node-prompt',
-    badgeBg: 'bg-node-prompt/20',
-    badgeText: 'text-node-prompt',
-  },
-  bash: {
-    badge: 'BASH',
-    stripeColor: 'bg-node-bash',
-    badgeBg: 'bg-node-bash/20',
-    badgeText: 'text-node-bash',
-  },
-} as const;
 
 function getContentPreview(data: DagNodeData): string {
   switch (data.nodeType) {
@@ -46,6 +39,12 @@ function getContentPreview(data: DagNodeData): string {
       return data.promptText?.split('\n')[0] ?? '';
     case 'bash':
       return data.bashScript?.split('\n')[0] ?? '';
+    case 'loop':
+      return data.loopPromptText?.split('\n')[0] ?? 'Loop';
+    case 'approval':
+      return data.approvalMessage?.split('\n')[0] ?? 'Approval gate';
+    case 'script':
+      return data.scriptContent?.split('\n')[0] ?? 'Script';
   }
 }
 
@@ -58,7 +57,7 @@ function MetadataPill({ children }: { children: React.ReactNode }): React.ReactE
 }
 
 function DagNodeRender({ data, selected }: NodeProps<DagFlowNode>): React.ReactElement {
-  const config = TYPE_CONFIG[data.nodeType];
+  const config = NODE_TYPE_CONFIG[data.nodeType as NodeCategory] ?? NODE_TYPE_CONFIG.prompt;
   const preview = getContentPreview(data);
   const hasPills =
     data.model ||
@@ -66,7 +65,9 @@ function DagNodeRender({ data, selected }: NodeProps<DagFlowNode>): React.ReactE
     data.when ||
     (data.trigger_rule && data.trigger_rule !== 'all_success') ||
     (data.skills && data.skills.length > 0) ||
-    data.mcp;
+    data.mcp ||
+    (data.agents && Object.keys(data.agents).length > 0) ||
+    data.effort;
 
   return (
     <div
@@ -112,6 +113,13 @@ function DagNodeRender({ data, selected }: NodeProps<DagFlowNode>): React.ReactE
             )}
             {data.skills && data.skills.length > 0 && <MetadataPill>skills</MetadataPill>}
             {data.mcp && <MetadataPill>mcp</MetadataPill>}
+            {data.agents && Object.keys(data.agents).length > 0 && (
+              <MetadataPill>
+                {Object.keys(data.agents).length} agent
+                {Object.keys(data.agents).length > 1 ? 's' : ''}
+              </MetadataPill>
+            )}
+            {data.effort && <MetadataPill>{data.effort}</MetadataPill>}
           </div>
         )}
       </div>
