@@ -3,7 +3,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { isAiNode } from '@/lib/node-type-constants';
+import { isAiNode, MODEL_PLACEHOLDERS, DEFAULT_MODEL_PLACEHOLDER } from '@/lib/node-type-constants';
+import { AgentEditor } from './AgentEditor';
 import type { DagNodeData } from './DagNodeComponent';
 import type { CommandEntry, DagNode } from '@/lib/api';
 import { useProviders } from '@/hooks/useProviders';
@@ -618,7 +619,7 @@ function ExecutionTab({
               onChange={(e): void => {
                 onUpdate({ model: e.target.value || undefined });
               }}
-              placeholder="Inherit"
+              placeholder={MODEL_PLACEHOLDERS[node.provider ?? ''] ?? DEFAULT_MODEL_PLACEHOLDER}
               className={inputClass}
             />
           </Field>
@@ -901,6 +902,34 @@ function JsonTextareaField({
   );
 }
 
+function CollapsibleSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}): React.ReactElement {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-t border-border pt-3 mt-1">
+      <button
+        type="button"
+        onClick={(): void => {
+          setOpen(!open);
+        }}
+        className="flex items-center gap-1 w-full text-left"
+      >
+        <span className={cn(labelClass, 'mb-0')}>
+          {open ? '▾' : '▸'} {title}
+        </span>
+      </button>
+      {open && <div className="flex flex-col gap-2 mt-2">{children}</div>}
+    </div>
+  );
+}
+
 function AdvancedTab({
   node,
   onUpdate,
@@ -954,6 +983,166 @@ function AdvancedTab({
         rows={5}
         onCommit={(v): void => {
           onUpdate({ hooks: v });
+        }}
+      />
+
+      {/* SDK Options — Claude / OpenCode specific */}
+      <CollapsibleSection title="SDK Options (Claude/OpenCode)">
+        <Field label="Effort">
+          <select
+            value={node.effort ?? ''}
+            onChange={(e): void => {
+              onUpdate({
+                effort: (e.target.value || undefined) as
+                  | 'low'
+                  | 'medium'
+                  | 'high'
+                  | 'max'
+                  | undefined,
+              });
+            }}
+            className={selectClass}
+          >
+            <option value="">Inherit</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="max">max</option>
+          </select>
+        </Field>
+
+        <Field label="Thinking">
+          <select
+            value={
+              node.thinking
+                ? (node.thinking as { type: string }).type === 'adaptive'
+                  ? 'adaptive'
+                  : (node.thinking as { type: string }).type === 'enabled'
+                    ? 'enabled'
+                    : 'disabled'
+                : ''
+            }
+            onChange={(e): void => {
+              const val = e.target.value;
+              if (!val) {
+                onUpdate({ thinking: undefined });
+              } else if (val === 'adaptive') {
+                onUpdate({ thinking: { type: 'adaptive' } });
+              } else if (val === 'enabled') {
+                onUpdate({ thinking: { type: 'enabled' } });
+              } else {
+                onUpdate({ thinking: { type: 'disabled' } });
+              }
+            }}
+            className={selectClass}
+          >
+            <option value="">Inherit</option>
+            <option value="adaptive">adaptive</option>
+            <option value="enabled">enabled</option>
+            <option value="disabled">disabled</option>
+          </select>
+        </Field>
+
+        <Field label="Sandbox">
+          <select
+            value={node.sandbox ? 'enabled' : ''}
+            onChange={(e): void => {
+              onUpdate({ sandbox: e.target.value === 'enabled' ? { enabled: true } : undefined });
+            }}
+            className={selectClass}
+          >
+            <option value="">Disabled (default)</option>
+            <option value="enabled">Enabled</option>
+          </select>
+        </Field>
+
+        <Field label="Betas">
+          <input
+            type="text"
+            value={node.betas?.join(', ') ?? ''}
+            onChange={(e): void => {
+              const val = parseToolsList(e.target.value);
+              onUpdate({ betas: val });
+            }}
+            placeholder="beta-feature-1, beta-feature-2"
+            className={inputClass}
+          />
+        </Field>
+      </CollapsibleSection>
+
+      {/* Budget & Fallback */}
+      <CollapsibleSection title="Budget & Fallback">
+        <Field label="Max Budget (USD)">
+          <input
+            type="number"
+            step="0.01"
+            min={0}
+            value={node.maxBudgetUsd ?? ''}
+            onChange={(e): void => {
+              const v = e.target.value;
+              onUpdate({ maxBudgetUsd: v ? Number(v) : undefined });
+            }}
+            placeholder="1.00"
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Fallback Model">
+          <input
+            type="text"
+            value={node.fallbackModel ?? ''}
+            onChange={(e): void => {
+              onUpdate({ fallbackModel: e.target.value || undefined });
+            }}
+            placeholder="Model to use if primary fails"
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="System Prompt Override">
+          <textarea
+            value={typeof node.systemPrompt === 'string' ? node.systemPrompt : ''}
+            onChange={(e): void => {
+              onUpdate({ systemPrompt: e.target.value || undefined });
+            }}
+            rows={3}
+            placeholder="Override the default system prompt..."
+            className={cn(textareaClass, 'min-h-[60px]')}
+          />
+        </Field>
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+function AgentsTab({
+  node,
+  onUpdate,
+}: {
+  node: DagNodeData;
+  onUpdate: (updates: Partial<DagNodeData>) => void;
+}): React.ReactElement {
+  return (
+    <div className="p-3">
+      <AgentEditor
+        agents={
+          node.agents as
+            | Record<
+                string,
+                {
+                  description: string;
+                  prompt: string;
+                  model?: string;
+                  tools?: string[];
+                  disallowedTools?: string[];
+                  skills?: string[];
+                  maxTurns?: number;
+                }
+              >
+            | undefined
+        }
+        onUpdate={(agents): void => {
+          onUpdate({ agents });
         }}
       />
     </div>
@@ -1014,6 +1203,11 @@ function DagInspector({
               Advanced
             </TabsTrigger>
           )}
+          {!isNonAi && (
+            <TabsTrigger value="agents" className="text-xs">
+              Agents
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <ScrollArea className="flex-1">
@@ -1034,6 +1228,12 @@ function DagInspector({
           {!isNonAi && (
             <TabsContent value="advanced">
               <AdvancedTab key={node.id} node={node} onUpdate={onUpdate} />
+            </TabsContent>
+          )}
+
+          {!isNonAi && (
+            <TabsContent value="agents">
+              <AgentsTab node={node} onUpdate={onUpdate} />
             </TabsContent>
           )}
         </ScrollArea>
