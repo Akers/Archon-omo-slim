@@ -71,11 +71,11 @@ export class OpencodeProvider implements IAgentProvider {
 
     const parsedModel = parsedModelOrNull;
 
-    const nodeAgents = requestOptions?.nodeConfig?.agents;
     const nodeId = requestOptions?.nodeConfig?.nodeId;
     const orderedAgents = getOrderedAgents(requestOptions?.nodeConfig);
     const hasAgentConfig = orderedAgents.length > 0;
     const isMultiAgent = orderedAgents.length > 1;
+    const hasOnlyBuiltinAgents = hasAgentConfig && orderedAgents.every(a => a.builtin);
     const usingExternalBaseUrl = Boolean(assistantConfig.baseUrl);
     if (usingExternalBaseUrl) {
       throw new Error(
@@ -115,14 +115,16 @@ export class OpencodeProvider implements IAgentProvider {
         // gets its own OpenCode InstanceState — preventing stale agent cache from
         // previous nodes in the same workflow run.
         // For multi-agent, materialize each agent in its own subdirectory.
-        if (hasAgentConfig) {
+        // Built-in oh-my-opencode-slim agents don't need materialization — they
+        // are already registered via the SDK plugin at runtime.
+        if (hasAgentConfig && !hasOnlyBuiltinAgents) {
           if (isMultiAgent) {
             // Materialize all agents in the shared sessionCwd so the single
             // event subscription catches events from every child session.
-            await materializeAgents(sessionCwd, nodeAgents ?? {});
+            await materializeAgents(sessionCwd, orderedAgents);
             await disposeInstanceForDirectory(runtime.client, sessionCwd);
-          } else if (nodeAgents) {
-            await materializeAgents(sessionCwd, nodeAgents);
+          } else {
+            await materializeAgents(sessionCwd, orderedAgents);
             await disposeInstanceForDirectory(runtime.client, sessionCwd);
           }
         }

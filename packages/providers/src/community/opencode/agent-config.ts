@@ -10,7 +10,33 @@ export interface NamedAgentConfig {
   key: string;
   opencodeAgentName: string;
   config: AgentConfig;
+  /**
+   * When true, this agent references a built-in oh-my-opencode-slim agent
+   * (e.g. `explorer`, `oracle`) that is already registered via the OpenCode
+   * SDK plugin. No file materialization or instance disposal is needed.
+   */
+  builtin: boolean;
 }
+
+/**
+ * Agent names that are built into oh-my-opencode-slim and registered via
+ * the OpenCode SDK plugin at runtime. When a workflow `agents:` key matches
+ * one of these names, the provider skips file materialization and references
+ * the agent by its original name instead of generating an `archon-*` file.
+ *
+ * Source: oh-my-opencode-slim src/config/constants.ts ALL_AGENT_NAMES
+ */
+const BUILTIN_AGENT_NAMES = new Set([
+  'orchestrator',
+  'explorer',
+  'librarian',
+  'oracle',
+  'designer',
+  'fixer',
+  'observer',
+  'council',
+  'councillor',
+]);
 
 let cachedLog: ReturnType<typeof createLogger> | undefined;
 
@@ -25,11 +51,17 @@ export function listNamedAgents(
   agents: Record<string, AgentConfig> | undefined
 ): NamedAgentConfig[] {
   if (!agents) return [];
-  return Object.entries(agents).map(([key, config]) => ({
-    key,
-    opencodeAgentName: `archon-${toKebabCase(key)}`,
-    config,
-  }));
+  return Object.entries(agents).map(([key, config]) => {
+    const builtin = BUILTIN_AGENT_NAMES.has(key);
+    return {
+      key,
+      // Built-in oh-my-opencode-slim agents are referenced by their original
+      // name (e.g. `oracle`); custom agents get the `archon-` prefix.
+      opencodeAgentName: builtin ? key : `archon-${toKebabCase(key)}`,
+      config,
+      builtin,
+    };
+  });
 }
 
 export function hasMultipleAgents(agents: Record<string, AgentConfig> | undefined): boolean {
