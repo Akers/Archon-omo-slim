@@ -22,6 +22,7 @@ import { useBuilderValidation } from '@/hooks/useBuilderValidation';
 import type { ValidationIssue } from '@/hooks/useBuilderValidation';
 import { BuilderToolbar } from './BuilderToolbar';
 import type { ViewMode } from './BuilderToolbar';
+import { WorkflowSettingsDialog, type WorkflowSettings } from './WorkflowSettingsDialog';
 import { NodeLibrary } from './NodeLibrary';
 import { WorkflowCanvas, reactFlowToDagNodes } from './WorkflowCanvas';
 import { NodeInspector } from './NodeInspector';
@@ -129,6 +130,8 @@ function WorkflowBuilderInner(): React.ReactElement {
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [provider, setProvider] = useState<string | undefined>(undefined);
   const [model, setModel] = useState<string | undefined>(undefined);
+  const [workflowSettings, setWorkflowSettings] = useState<WorkflowSettings>({});
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [workflowSource, setWorkflowSource] = useState<WorkflowSource | undefined>(undefined);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -196,8 +199,9 @@ function WorkflowBuilderInner(): React.ReactElement {
       provider,
       model,
       nodes: dagNodes,
+      ...workflowSettings,
     };
-  }, [workflowName, workflowDescription, provider, model, nodes, edges]);
+  }, [workflowName, workflowDescription, provider, model, nodes, edges, workflowSettings]);
 
   const loadWorkflow = useCallback(
     async (name: string): Promise<void> => {
@@ -207,6 +211,13 @@ function WorkflowBuilderInner(): React.ReactElement {
         setWorkflowDescription(workflow.description);
         setProvider(workflow.provider);
         setModel(workflow.model);
+        setWorkflowSettings({
+          effort: workflow.effort,
+          thinking: workflow.thinking,
+          sandbox: workflow.sandbox,
+          betas: workflow.betas,
+          fallbackModel: workflow.fallbackModel,
+        });
         setWorkflowSource(source);
         setValidationErrors([]);
 
@@ -476,6 +487,9 @@ function WorkflowBuilderInner(): React.ReactElement {
         onLoadWorkflow={(name): void => {
           void loadWorkflow(name);
         }}
+        onSettings={(): void => {
+          setSettingsDialogOpen(true);
+        }}
       />
 
       {commandsError && (
@@ -552,6 +566,16 @@ function WorkflowBuilderInner(): React.ReactElement {
         hasUnsavedChanges={hasUnsavedChanges}
         zoomLevel={Math.round(zoom * 100)}
         onValidationClick={handleToggleValidationPanel}
+      />
+
+      <WorkflowSettingsDialog
+        open={settingsDialogOpen}
+        onOpenChange={setSettingsDialogOpen}
+        settings={workflowSettings}
+        onSettingsChange={(s): void => {
+          setWorkflowSettings(s);
+          markDirty();
+        }}
       />
     </div>
   );

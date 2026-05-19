@@ -26,6 +26,7 @@ export interface BuilderToolbarProps {
   onSave: () => void;
   onRun: () => void;
   onLoadWorkflow: (name: string) => void;
+  onSettings: () => void;
 }
 
 const VIEW_MODE_LABELS: readonly { value: ViewMode; label: string }[] = [
@@ -51,6 +52,7 @@ export function BuilderToolbar({
   onSave,
   onRun,
   onLoadWorkflow,
+  onSettings,
 }: BuilderToolbarProps): React.ReactElement {
   const navigate = useNavigate();
   const { codebases, selectedProjectId } = useProject();
@@ -205,6 +207,16 @@ export function BuilderToolbar({
               </button>
             ))}
           </div>
+
+          {/* Settings button */}
+          <button
+            type="button"
+            onClick={onSettings}
+            className="rounded-md border border-border px-2 py-1 text-[10px] font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+            title="Workflow settings"
+          >
+            ⚙️
+          </button>
 
           {/* Validation errors badge */}
           {validationErrors.length > 0 && (
