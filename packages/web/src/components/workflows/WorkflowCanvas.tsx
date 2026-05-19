@@ -22,9 +22,14 @@ import { QuickAddPicker } from './QuickAddPicker';
 
 export { dagNodesToReactFlow } from '@/lib/dag-layout';
 
-function resolveNodeLabel(nodeType: 'command' | 'prompt' | 'bash', commandName: string): string {
+type AllNodeType = 'command' | 'prompt' | 'bash' | 'loop' | 'approval' | 'script';
+
+function resolveNodeLabel(nodeType: AllNodeType, commandName: string): string {
   if (nodeType === 'command') return commandName;
   if (nodeType === 'bash') return 'Shell';
+  if (nodeType === 'loop') return 'Loop';
+  if (nodeType === 'approval') return 'Approval';
+  if (nodeType === 'script') return 'Script';
   return 'Prompt';
 }
 
@@ -40,7 +45,6 @@ export function reactFlowToDagNodes(rfNodes: DagFlowNode[], rfEdges: Edge[]): Da
     };
 
     if (node.data.nodeType === 'bash') {
-      // DagNode uses `never` discriminant fields that can't be set on object literals
       return {
         ...dagBase,
         bash: node.data.bashScript ?? '',
@@ -48,7 +52,48 @@ export function reactFlowToDagNodes(rfNodes: DagFlowNode[], rfEdges: Edge[]): Da
       } as DagNode;
     }
 
-    // AI node fields (not applicable to bash)
+    if (node.data.nodeType === 'script') {
+      return {
+        ...dagBase,
+        script: node.data.scriptContent ?? '',
+        runtime: node.data.scriptRuntime ?? 'bun',
+        ...(node.data.scriptDeps
+          ? {
+              deps: node.data.scriptDeps
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean),
+            }
+          : {}),
+        ...(node.data.scriptTimeout ? { timeout: node.data.scriptTimeout } : {}),
+      } as DagNode;
+    }
+
+    if (node.data.nodeType === 'loop') {
+      return {
+        ...dagBase,
+        loop: {
+          prompt: node.data.loopPromptText ?? '',
+          until: node.data.loopExitCondition ?? 'COMPLETE',
+          max_iterations: node.data.loopMaxIterations ?? 3,
+          fresh_context: node.data.loopFreshContext ?? false,
+        },
+      } as DagNode;
+    }
+
+    if (node.data.nodeType === 'approval') {
+      return {
+        ...dagBase,
+        approval: {
+          message: node.data.approvalMessage ?? '',
+          ...(node.data.approvalCaptureResponse !== undefined
+            ? { capture_response: node.data.approvalCaptureResponse }
+            : {}),
+        },
+      } as DagNode;
+    }
+
+    // AI node fields (command, prompt)
     const aiBase = {
       ...dagBase,
       model: node.data.model || undefined,
@@ -60,9 +105,19 @@ export function reactFlowToDagNodes(rfNodes: DagFlowNode[], rfEdges: Edge[]): Da
       hooks: node.data.hooks ?? undefined,
       mcp: node.data.mcp ?? undefined,
       skills: node.data.skills ?? undefined,
+      // Previously missing fields
+      agents: node.data.agents ?? undefined,
+      effort: node.data.effort ?? undefined,
+      thinking: node.data.thinking ?? undefined,
+      sandbox: node.data.sandbox ?? undefined,
+      maxBudgetUsd: node.data.maxBudgetUsd ?? undefined,
+      systemPrompt: node.data.systemPrompt ?? undefined,
+      fallbackModel: node.data.fallbackModel ?? undefined,
+      betas: node.data.betas ?? undefined,
+      retry: node.data.retry ?? undefined,
+      idle_timeout: node.data.idle_timeout ?? undefined,
     };
 
-    // DagNode uses `never` discriminant fields that can't be set on object literals
     if (node.data.nodeType === 'command') {
       return { ...aiBase, command: node.data.label } as DagNode;
     }
@@ -158,7 +213,7 @@ export function WorkflowCanvas({
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
       const id = `node-${crypto.randomUUID()}`;
 
-      const nodeType = type as 'command' | 'prompt' | 'bash';
+      const nodeType = type as AllNodeType;
       const label = resolveNodeLabel(nodeType, command);
 
       const newNode: DagFlowNode = {
@@ -266,10 +321,7 @@ export function WorkflowCanvas({
   );
 
   const handleQuickAddNode = useCallback(
-    (
-      type: 'command' | 'prompt' | 'bash',
-      options?: { commandName?: string; skills?: string[]; mcp?: string }
-    ) => {
+    (type: AllNodeType, options?: { commandName?: string; skills?: string[]; mcp?: string }) => {
       if (!quickAddPosition) return;
 
       const id = `node-${crypto.randomUUID()}`;

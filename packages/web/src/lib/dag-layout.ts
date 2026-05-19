@@ -45,10 +45,20 @@ export function layoutWithDagre(
 
 export function resolveNodeDisplay(dn: DagNode): {
   label: string;
-  nodeType: 'command' | 'prompt' | 'bash';
+  nodeType: 'command' | 'prompt' | 'bash' | 'loop' | 'approval' | 'script';
   promptText?: string;
   bashScript?: string;
   bashTimeout?: number;
+  loopPromptText?: string;
+  loopMaxIterations?: number;
+  loopExitCondition?: string;
+  loopFreshContext?: boolean;
+  approvalMessage?: string;
+  approvalCaptureResponse?: boolean;
+  scriptContent?: string;
+  scriptRuntime?: 'bun' | 'uv';
+  scriptDeps?: string;
+  scriptTimeout?: number;
 } {
   if ('bash' in dn && dn.bash) {
     return {
@@ -56,6 +66,34 @@ export function resolveNodeDisplay(dn: DagNode): {
       nodeType: 'bash',
       bashScript: dn.bash,
       bashTimeout: dn.timeout,
+    };
+  }
+  if ('script' in dn && dn.script) {
+    return {
+      label: 'Script',
+      nodeType: 'script',
+      scriptContent: dn.script,
+      scriptRuntime: dn.runtime,
+      scriptDeps: dn.deps?.join(', '),
+      scriptTimeout: dn.timeout,
+    };
+  }
+  if ('loop' in dn && dn.loop) {
+    return {
+      label: 'Loop',
+      nodeType: 'loop',
+      loopPromptText: dn.loop.prompt,
+      loopMaxIterations: dn.loop.max_iterations,
+      loopExitCondition: dn.loop.until,
+      loopFreshContext: dn.loop.fresh_context,
+    };
+  }
+  if ('approval' in dn && dn.approval) {
+    return {
+      label: 'Approval',
+      nodeType: 'approval',
+      approvalMessage: dn.approval.message,
+      approvalCaptureResponse: dn.approval.capture_response,
     };
   }
   if ('command' in dn && dn.command) {
