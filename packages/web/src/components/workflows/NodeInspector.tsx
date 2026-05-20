@@ -1185,7 +1185,7 @@ function DagInspector({
       </div>
 
       {/* Tabbed content */}
-      <Tabs defaultValue="general" className="flex-1 flex flex-col gap-0">
+      <Tabs defaultValue="general" className="flex-1 flex flex-col gap-0 min-h-0">
         <TabsList variant="line" className="px-2 pt-1 w-full justify-start">
           <TabsTrigger value="general" className="text-xs">
             General
@@ -1210,7 +1210,7 @@ function DagInspector({
           )}
         </TabsList>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <TabsContent value="general">
             <GeneralTab node={node} commands={commands} onUpdate={onUpdate} />
           </TabsContent>

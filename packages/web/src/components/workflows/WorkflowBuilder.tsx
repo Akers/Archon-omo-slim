@@ -535,7 +535,7 @@ function WorkflowBuilderInner(): React.ReactElement {
 
         {/* Right panel: Node Inspector */}
         {selectedNodeId && selectedNode && yamlViewMode !== 'full' && (
-          <div className="w-72 shrink-0">
+          <div className="w-96 shrink-0">
             <NodeInspector
               node={selectedNode.data}
               commands={commandList}
