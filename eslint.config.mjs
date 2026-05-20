@@ -29,6 +29,8 @@ export default tseslint.config(
       'packages/web/components.json',
       'packages/web/src/components/ui/**', // shadcn/ui auto-generated components
       'packages/web/src/lib/utils.ts', // shadcn/ui utility file
+      'playwright.config.ts', // Playwright config (not in tsconfig project)
+      'tests/**', // E2E test files (not in tsconfig project)
     ],
   },
 
